@@ -1,0 +1,22 @@
+{
+    "odata": {
+        "skipValidation": "true"
+    },
+    "auth": {
+        "passport": {
+            "strategy": "mock",
+            "users": {
+                "user": {
+                    "jwt": {
+                        "userInfo": {
+                            "logonName": "user",
+                            "email": "user@example.com"
+                        },
+                        "scopes": [
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

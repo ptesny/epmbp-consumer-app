@@ -1,0 +1,103 @@
+{
+  "name": "epmbp-consumer-app",
+  "version": "1.0.0",
+  "engines": {
+    "node": "^14"
+  },
+  "description": "A simple CAP project.",
+  "repository": "<Add your repository here>",
+  "license": "ISC",
+  "dependencies": {
+    "@sap-cloud-sdk/core": "^1.45.0",
+    "@sap/cds": "^5.1.5",
+    "@sap/cds-odata-v2-adapter-proxy": "^1.7.4",
+    "@sap/hana-client": "^2.8.22",
+    "@sap/xsenv": "^3.1.0",
+    "@sap/xssec": "^3.2.2",
+    "express": "^4.17.1",
+    "hdb": "^0.18.3",
+    "passport": "^0.4.1"
+  },
+  "devDependencies": {
+    "@sap-cloud-sdk/generator": "^1.45.0",
+    "@sap/hdi-deploy": "4.0.5",
+    "sqlite3": "^5.0.2"
+  },
+  "scripts": {
+    "setup": "npm install && npm run build && npm run deploy:local",
+    "start": "npm run start:cds",
+    "start:debug": "node --inspect srv/cds.js run",
+    "start:cds": "cds run",
+    "start:local": "npm run deploy:local && npm start",
+    "build": "cds build/all --clean",
+    "build:cf": "cp mta-cf.yaml mta.yaml && mbt build -p=cf && rm mta.yaml",
+    "build:xsa": "cp mta-xsa.yaml mta.yaml && mbt build -p=xsa && rm mta.yaml",
+    "build:xs-security": "cds compile srv/ --to xsuaa  > xs-security.json",
+    "generate-odata-client": "generate-odata-client --inputDir srv/external --outputDir srv/odata-client --forceOverwrite",
+    "deploy:local": "cds deploy",
+    "deploy:cf": "cf deploy mta_archives/epmbp-consumer-app_0.0.1.mtar",
+    "deploy:cf:trial": "cf deploy mta_archives/epmbp-consumer-app_0.0.1.mtar -e cf.mtaext",
+    "deploy:xsa": "xs deploy mta_archives/epmbp-consumer-app_0.0.1.mtar",
+    "deploy:xsa:user": "xs deploy mta_archives/epmbp-consumer-app_0.0.1.mtar -e xsa.mtaext",
+    "enable:ssh": "cf enable-ssh epmbp-consumer-app-srv",
+    "debug:cf": "cf ssh epmbp-consumer-app-srv -N -T -L 9229:localhost:9229",
+    "undeploy:cf": "cf undeploy epmbp-consumer-app --delete-services --delete-service-brokers"
+  },
+  "cds": {
+    "hana": {
+      "deploy-format": "hdbtable"
+    },
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "database": "my.db"
+        }
+      },
+      "EPM_REF_APPS_PROD_MAN_SRV": {
+        "kind": "odata",
+        "model": "srv/external/EPM_REF_APPS_PROD_MAN_SRV",
+        "credentials": {
+          "adestination": "LOCAL",
+          "ydestination": "NPL",
+          "destination": "ES5",
+          "xdestination": "KPE",
+          "path": "/sap/opu/odata/sap/EPM_REF_APPS_PROD_MAN_SRV",
+          "requestTimeout": 30000
+        },
+        "pool": {
+          "min": 1,
+          "max": 10
+        }
+      },
+      "ZPDCDS_SRV": {
+        "kind": "odata",
+        "model": "srv/external/ZPDCDS_SRV",
+        "credentials": {
+          "destination": "ES5",
+          "path": "/sap/opu/odata/sap/ZPDCDS_SRV",
+          "requestTimeout": 30000
+        }
+      }
+    },
+    "[production]": {
+      "requires": {
+        "uaa": {
+          "kind": "xsuaa"
+        },
+        "db": {
+          "kind": "hana",
+          "model": [
+            "db",
+            "srv"
+          ]
+        }
+      },
+      "auth": {
+        "passport": {
+          "strategy": "JWT"
+        }
+      }
+    }
+  }
+}
